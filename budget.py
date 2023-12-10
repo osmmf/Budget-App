@@ -1,80 +1,94 @@
-class Category:
-    def __init__(self, category):
-        self.category = category
+import math
+
+
+class Category():
+    def __init__(self, name):
+        self.name = name
         self.ledger = []
 
-    def deposit(self, amount, description=""):
-        self.ledger.append({"amount": amount, "description": description})
-
-    def withdraw(self, amount, description=""):
-        if self.check_funds(amount):
-            self.ledger.append({"amount": -amount, "description": description})
-            return True
-        return False
-
-    def get_balance(self):
-        return sum(item["amount"] for item in self.ledger)
-
-    def transfer(self, amount, budget_category):
-        if self.check_funds(amount):
-            self.withdraw(amount, f"Transfer to {budget_category.category}")
-            budget_category.deposit(amount, f"Transfer from {self.category}")
-            return True
-        return False
-
-    def check_funds(self, amount):
-        return amount <= self.get_balance()
-
     def __str__(self):
-        title = f"{self.category:*^30}\n"
+        title = self.name.center(30, "*") + '\n'
         items = ""
         for item in self.ledger:
-            items += f"{item['description'][:23]:23}{item['amount']:>7.2f}\n"
-        total = f"Total: {self.get_balance():.2f}"
-        return title + items + total
+            desc = item["description"]
+            amount = "{:0.2f}".format(float(item["amount"]))
+            if len(desc) > 23: desc = desc[0:23]
+            if len(amount) > 7: amount = amount[0:7]
+            items = items + desc + (30 - len(desc) - len(amount)) * " " + amount + '\n'
+
+        return title + items + "Total: " + str(float(self.get_balance()))
+
+    def deposit(self, amount, desc=""):
+        self.ledger.append({ "amount" : amount, "description": desc })
+
+    def withdraw(self, amount, desc=""):
+        if self.check_funds(amount):
+            amount = amount * - 1
+            self.ledger.append({ "amount" : amount, "description": desc })
+            return True
+        else:
+            return False
+
+    def get_balance(self):
+        balance = 0
+        for entry in self.ledger:
+            balance = balance + entry["amount"]
+        return balance
+
+    def transfer(self, amount, category):
+        if self.check_funds(amount):
+            self.withdraw(amount, "Transfer to " + category.name)
+            category.deposit(amount, "Transfer from " + self.name)
+            return True
+        else:
+            return False
+
+    def check_funds(self, amount):
+        if amount <= self.get_balance():
+            return True
+        else:
+            return False
+
 
 
 def create_spend_chart(categories):
+    totals = {}
+    total = 0
     chart = "Percentage spent by category\n"
-    spendings = [sum(item['amount'] for item in category.ledger if item['amount'] < 0) for category in categories]
-    total_spent = sum(spendings)
-    percentages = [(int(spending / total_spent * 100) // 10) * 10 for spending in spendings]
+    for category in categories:
+        totals[category.name] = 0
+        for entry in category.ledger:
+            if entry["amount"] < 0:
+                totals[category.name] = totals[category.name] + entry["amount"]
 
-    max_category_length = max(len(category.category) for category in categories)
-    
-    for i in range(100, -1, -10):
-        chart += f"{i:3}| "
-        for percentage in percentages:
-            chart += "o" if percentage >= i else " "
-            chart += "  "
-        chart += "\n"
+    for k, v in totals.items():
+        totals[k] = v * - 1
+        total = total - v
 
-    chart += "    ----------\n"
+    for k, v in totals.items():
+        percentage = math.trunc((v / total * 100))
+        totals[k] = percentage
 
-    for i in range(max_category_length):
-        chart += "     "
-        for category in categories:
-            chart += category.category[i] if i < len(category.category) else " "
-            chart += "  "
-        chart += "\n"
 
-    return chart.rstrip()
+    for i in range(100, -10, -10):
+        chart = chart + str(i).rjust(3, " ") + "|"
+        for k, v in totals.items():
+            if v >= i:
+                chart = chart + " o "
+            else:
+                chart = chart + "   "
+        chart = chart + " \n"
 
-    for i in range(100, -1, -10):
-        chart += f"{i:3}| "
-        for percentage in percentages:
-            chart += "o" if percentage >= i else " "
-            chart += "  "
-        chart += "\n"
+    chart = chart + 4 * " " + (4 + 2 * len(totals)) * "-"
+    i = 0
+    while i < max(len(k) for k, v in totals.items()):
+        chart = chart + "\n" + 4 * " "
+        for key in totals:
+            if len(key) <= i:
+                chart = chart + "   "
+            else:
+                chart = chart + " " + key[i] + " "
+        chart = chart + " "
+        i = i + 1
 
-    chart += "    ----------\n"
-
-    max_length = max(len(category.category) for category in categories)
-    for i in range(max_length):
-        chart += "     "
-        for category in categories:
-            chart += category.category[i] if i < len(category.category) else " "
-            chart += "  "
-        chart += "\n"
-
-    return chart.rstrip()
+    return chart

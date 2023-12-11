@@ -1,4 +1,4 @@
-#Budget App
+# Budget App
 
 Welcome to the FreeCodeCamp Budget App challenge! In this project, we'll be working on the `Category` class in `budget.py`. The `Category` class is responsible for managing budget categories such as food, clothing, and entertainment. It includes various methods to handle deposits, withdrawals, transfers, and checking funds.
 
